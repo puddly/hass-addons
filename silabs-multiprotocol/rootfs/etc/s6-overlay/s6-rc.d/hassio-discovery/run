@@ -34,7 +34,9 @@ elif [ -e "/sys/class/tty/$(basename ${device})" ]; then
 fi
 
 config=$(bashio::var.json \
-	port "${ezsp_listen_port}" \
+	port "^${ezsp_listen_port}" \
+    radio_type "ezsp" \
+    device "${device}" \
 	name "${name}"
 )
 
