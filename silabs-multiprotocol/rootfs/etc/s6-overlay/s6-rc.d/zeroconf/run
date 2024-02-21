@@ -1,0 +1,36 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start avahi-publish-service
+# ==============================================================================
+bashio::log.info "Starting avahi-publish-service..."
+
+declare name
+declare device
+declare usb_device_path
+declare usb_manufacturer
+declare usb_product
+declare usb_device_path
+declare ezsp_listen_port
+
+device=$(bashio::config 'device')
+ezsp_listen_port="$(bashio::addon.port 9999)"
+name="Multi-PAN"
+
+if [ -d /sys/devices/platform/soc/fe201800.serial/tty/ttyAMA1 ] && [ "${device}" == "/dev/ttyAMA1" ]; then
+    bashio::log.info "Detected Yellow"
+    name="Yellow ${name}"
+elif [ -e "/sys/class/tty/$(basename ${device})" ]; then
+    usb_device_path=$(realpath /sys/class/tty/$(readlink /sys/class/tty/$(basename ${device}))/../../../../)
+
+    if [ -f "${usb_device_path}/manufacturer" ] && [ -f "${usb_device_path}/product" ]; then
+        usb_manufacturer=$(cat "${usb_device_path}/manufacturer")
+        usb_product=$(cat "${usb_device_path}/product")
+
+        if [[ "${usb_manufacturer}" == "Nabu Casa" && "${usb_product}" == "SkyConnect"* ]]; then
+            bashio::log.info "Detected SkyConnect"
+            name="SkyConnect ${name}"
+        fi
+    fi
+fi
+
+exec avahi-publish-service "$name" _zigbee._tcp ${ezsp_listen_port}

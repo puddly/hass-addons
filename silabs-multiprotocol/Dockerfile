@@ -148,6 +148,7 @@ RUN \
     && apt-get install -y --no-install-recommends \
        libmbedtls12 \
        socat \
+       avahi-utils \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/src/*
 
