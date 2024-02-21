@@ -1,5 +1,5 @@
 #!/usr/bin/with-contenv bashio
 #==============================================================================
-# Zeroconf broadcaster finish script
+# hassio-discoveryfinish script
 #==============================================================================
-bashio::log.info "zeroconf ended with exit code ${1} (signal ${2})..."
+bashio::log.info "hassio-discovery ended with exit code ${1} (signal ${2})..."

@@ -1,8 +1,8 @@
 #!/usr/bin/with-contenv bashio
 # ==============================================================================
-# Start avahi-publish-service
+# Start hassio-discovery
 # ==============================================================================
-bashio::log.info "Starting avahi-publish-service..."
+bashio::log.info "Starting hassio-discovery..."
 
 declare name
 declare device
@@ -33,4 +33,14 @@ elif [ -e "/sys/class/tty/$(basename ${device})" ]; then
     fi
 fi
 
-exec avahi-publish-service "$name" _zigbee._tcp ${ezsp_listen_port}
+config=$(bashio::var.json \
+	port "${ezsp_listen_port}" \
+	name "${name}"
+)
+
+# Send discovery info
+if bashio::discovery "zha" "${config}" > /dev/null; then
+    bashio::log.info "Successfully send discovery information to Home Assistant."
+else
+    bashio::log.error "Discovery message to Home Assistant failed!"
+fi
