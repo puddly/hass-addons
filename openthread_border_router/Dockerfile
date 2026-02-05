@@ -1,10 +1,10 @@
 ARG BUILD_FROM
 
-# OTBR builder stage (beta)
-FROM ${BUILD_FROM} AS otbr-beta-builder
+# OTBR builder stage
+FROM ${BUILD_FROM} AS otbr-builder
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ARG OTBR_BETA_VERSION
+ARG OTBR_VERSION
 
 ENV BORDER_ROUTING=1
 ENV BACKBONE_ROUTER=1
@@ -20,26 +20,41 @@ COPY openthread-core-ha-config-posix.h /usr/src/
 WORKDIR /usr/src
 RUN \
     set -x \
-    && apt-get update \
-    # The OTBR build script tries to run `sudo`
-    && apt-get install -y --no-install-recommends sudo git \
+    && apk add --no-cache \
+       git \
+       wget \
+       iproute2 \
+       iputils \
+       readline-dev \
+       ncurses-dev \
+       build-base \
+       ninja \
+       cmake \
+       iptables \
+       jsoncpp-dev \
+       libnetfilter_queue-dev \
+       nodejs \
+       npm \
+       protobuf-dev \
     && git clone --depth 1 -b main https://github.com/openthread/ot-br-posix.git /usr/src/ot-br-posix \
     && cd /usr/src/ot-br-posix \
-    && git fetch origin ${OTBR_BETA_VERSION} \
-    && git checkout ${OTBR_BETA_VERSION} \
-    && git submodule update --init \
-    # Bootstrap downloads a few more repos
-    && ./script/bootstrap \
-    # Remove libsystemd-dev to avoid unnecessary linkage
-    && apt-get purge -y libsystemd-dev
+    && git fetch origin ${OTBR_VERSION} \
+    && git checkout ${OTBR_VERSION} \
+    && git submodule update --init --recursive --depth 1
 
 WORKDIR /usr/src/ot-br-posix
 RUN \
     set -x \
     && mv /usr/src/openthread-core-ha-config-posix.h /usr/src/ot-br-posix/third_party/openthread/repo/ \
-    && ./script/cmake-build \
+    && mkdir /usr/src/ot-br-posix/build \
+    && cd /usr/src/ot-br-posix/build \
+    && cmake \
+        -GNinja \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        .. \
         -DBUILD_TESTING=OFF \
-        -DCMAKE_INSTALL_PREFIX=/opt/otbr-beta \
+        -DCMAKE_INSTALL_PREFIX=/usr \
         -DOTBR_FEATURE_FLAGS=ON \
         -DOTBR_MDNS=openthread \
         -DOTBR_VERSION= \
@@ -62,85 +77,7 @@ RUN \
         -DOT_COAPS=OFF \
         -DOT_THREAD_VERSION=1.4 \
         -DOT_PROJECT_CONFIG="/usr/src/ot-br-posix/third_party/openthread/repo/openthread-core-ha-config-posix.h" \
-    && cd /usr/src/ot-br-posix/build/otbr \
-    && ninja install
-
-
-# OTBR builder stage (stable)
-FROM ${BUILD_FROM} AS otbr-stable-builder
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-ARG OTBR_VERSION
-
-ENV BORDER_ROUTING=1
-ENV BACKBONE_ROUTER=1
-ENV PLATFORM=debian
-ENV RELEASE=1
-ENV WEB_GUI=1
-ENV REST_API=1
-ENV DHCPV6_PD_REF=0
-ENV DOCKER=1
-
-
-COPY openthread-core-ha-config-posix.h /usr/src/
-COPY 0001-channel-monitor-disable-by-default.patch /usr/src/
-COPY 0002-spinel-Clear-source-match-tables-before-restoring.patch /usr/src/
-
-WORKDIR /usr/src
-RUN \
-    set -x \
-    && apt-get update \
-    # The OTBR build script tries to run `sudo`
-    && apt-get install -y --no-install-recommends sudo git \
-    && git clone --depth 1 -b main https://github.com/openthread/ot-br-posix.git /usr/src/ot-br-posix \
-    && cd /usr/src/ot-br-posix \
-    && git fetch origin ${OTBR_VERSION} \
-    && git checkout ${OTBR_VERSION} \
-    && git submodule update --init \
-    # Bootstrap downloads a few more repos
-    && ./script/bootstrap \
-    # Remove libsystemd-dev to avoid unnecessary linkage
-    && apt-get purge -y libsystemd-dev
-
-WORKDIR /usr/src/ot-br-posix
-RUN \
-    set -x \
-    && mv /usr/src/openthread-core-ha-config-posix.h /usr/src/ot-br-posix/third_party/openthread/repo/ \
-    && ( \
-        cd third_party/openthread/repo \
-        && patch -p1 < /usr/src/0001-channel-monitor-disable-by-default.patch \
-        && patch -p1 < /usr/src/0002-spinel-Clear-source-match-tables-before-restoring.patch \
-    ) \
-    && ./script/cmake-build \
-        -DBUILD_TESTING=OFF \
-        -DCMAKE_INSTALL_PREFIX=/opt/otbr-stable \
-        -DOTBR_FEATURE_FLAGS=ON \
-        -DOTBR_DNSSD_DISCOVERY_PROXY=ON \
-        -DOTBR_SRP_ADVERTISING_PROXY=ON \
-        -DOTBR_MDNS=mDNSResponder \
-        -DOTBR_VERSION= \
-        -DOT_PACKAGE_VERSION= \
-        -DOTBR_DBUS=OFF \
-        -DOT_POSIX_RCP_BUS_UART=ON \
-        -DOT_LINK_RAW=1 \
-        -DOTBR_VENDOR_NAME="Home Assistant" \
-        -DOTBR_PRODUCT_NAME="OpenThread Border Router" \
-        -DOTBR_WEB=ON \
-        -DOTBR_BORDER_ROUTING=ON \
-        -DOTBR_REST=ON \
-        -DOTBR_BACKBONE_ROUTER=ON \
-        -DOTBR_TREL=ON \
-        -DOTBR_NAT64=ON \
-        -DOT_POSIX_NAT64_CIDR="192.168.255.0/24" \
-        -DOTBR_DNS_UPSTREAM_QUERY=ON \
-        -DOT_CHANNEL_MONITOR=ON \
-        -DOT_COAP=OFF \
-        -DOT_COAPS=OFF \
-        -DOT_DNS_CLIENT_OVER_TCP=OFF \
-        -DOT_THREAD_VERSION=1.3 \
-        -DOT_PROJECT_CONFIG="/usr/src/ot-br-posix/third_party/openthread/repo/openthread-core-ha-config-posix.h" \
-        -DOT_RCP_RESTORATION_MAX_COUNT=2 \
-    && cd /usr/src/ot-br-posix/build/otbr \
+    && ninja \
     && ninja install
 
 # Runtime image
@@ -153,24 +90,23 @@ ARG UNIVERSAL_SILABS_FLASHER_VERSION
 # Install runtime dependencies
 RUN \
     set -x \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+    && apk add --no-cache \
        python3 \
-       python3-pip \
+       py3-pip \
        netcat-openbsd \
        socat \
        iproute2 \
-       iputils-ping \
+       iputils \
        ipset \
        iptables \
-       libreadline8 \
-       libncurses6 \
-       libprotobuf-lite32 \
-       libjsoncpp26 \
+       readline \
+       ncurses-libs \
+       protobuf \
+       jsoncpp \
     && pip install --break-system-packages --no-cache-dir \
        universal-silabs-flasher==${UNIVERSAL_SILABS_FLASHER_VERSION} \
        serialx==${SERIALX_VERSION} \
-    && rm -rf /var/lib/apt/lists/*
+    && apk del py3-pip
 
 # Setup routing table for OpenThread
 RUN \
@@ -178,11 +114,8 @@ RUN \
     && echo "88 openthread" >> /etc/iproute2/rt_tables
 
 
-COPY --from=otbr-beta-builder /opt/otbr-beta /opt/otbr-beta
-COPY --from=otbr-stable-builder /opt/otbr-stable /opt/otbr-stable
-COPY --from=otbr-stable-builder /usr/sbin/mdnsd /opt/otbr-stable/sbin/mdnsd
-COPY --from=otbr-stable-builder /usr/lib/libdns_sd.so /usr/lib/libdns_sd.so
-COPY --from=otbr-stable-builder /usr/lib/libdns_sd.so.1 /usr/lib/libdns_sd.so.1
+COPY --from=otbr-builder /usr/sbin/otbr-agent /usr/sbin/otbr-web /usr/sbin/ot-ctl /usr/sbin/
+COPY --from=otbr-builder /usr/share/otbr-web /usr/share/otbr-web
 COPY rootfs /
 
 ENV \
