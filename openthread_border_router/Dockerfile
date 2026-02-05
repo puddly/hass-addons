@@ -21,25 +21,22 @@ COPY 0001-rest-SO_REUSEADDR.patch /usr/src/
 WORKDIR /usr/src
 RUN \
     set -x \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        git \
-        wget \
-        iproute2 \
-        iputils-ping \
-        libreadline-dev \
-        libncurses-dev \
-        build-essential \
-        ninja-build \
-        cmake \
-        iptables \
-        libjsoncpp-dev \
-        libnetfilter-queue-dev \
-        nodejs \
-        npm \
-        libprotobuf-dev \
-        protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/* \
+    && apk add --no-cache \
+       git \
+       wget \
+       iproute2 \
+       iputils \
+       readline-dev \
+       ncurses-dev \
+       build-base \
+       ninja \
+       cmake \
+       iptables \
+       jsoncpp-dev \
+       libnetfilter_queue-dev \
+       nodejs \
+       npm \
+       protobuf-dev \
     && git clone --depth 1 -b main https://github.com/openthread/ot-br-posix.git /usr/src/ot-br-posix \
     && cd /usr/src/ot-br-posix \
     && git fetch origin ${OTBR_BETA_VERSION} \
@@ -109,24 +106,22 @@ COPY 0002-nat64-handle-ipv4-options.patch /usr/src/
 WORKDIR /usr/src
 RUN \
     set -x \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        git \
-        wget \
-        iproute2 \
-        iputils-ping \
-        libreadline-dev \
-        libncurses-dev \
-        build-essential \
-        ninja-build \
-        cmake \
-        iptables \
-        libjsoncpp-dev \
-        libnetfilter-queue-dev \
-        nodejs \
-        npm \
-        libprotobuf-dev \
-        protobuf-compiler \
+    && apk add --no-cache \
+       git \
+       wget \
+       iproute2 \
+       iputils \
+       readline-dev \
+       ncurses-dev \
+       build-base \
+       ninja \
+       cmake \
+       iptables \
+       jsoncpp-dev \
+       libnetfilter_queue-dev \
+       nodejs \
+       npm \
+       protobuf-dev \
     && git clone --depth 1 -b main https://github.com/openthread/ot-br-posix.git /usr/src/ot-br-posix \
     && cd /usr/src/ot-br-posix \
     && git fetch origin ${OTBR_VERSION} \
@@ -184,24 +179,23 @@ ARG UNIVERSAL_SILABS_FLASHER_VERSION
 # Install runtime dependencies
 RUN \
     set -x \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+    && apk add --no-cache \
        python3 \
-       python3-pip \
+       py3-pip \
        netcat-openbsd \
        socat \
        iproute2 \
-       iputils-ping \
+       iputils \
        ipset \
        iptables \
-       libreadline8 \
-       libncurses6 \
-       libprotobuf-lite32 \
-       libjsoncpp26 \
+       readline \
+       ncurses-libs \
+       protobuf \
+       jsoncpp \
     && pip install --break-system-packages --no-cache-dir \
        universal-silabs-flasher==${UNIVERSAL_SILABS_FLASHER_VERSION} \
        serialx==${SERIALX_VERSION} \
-    && rm -rf /var/lib/apt/lists/*
+    && apk del py3-pip
 
 # Setup routing table for OpenThread
 RUN \
