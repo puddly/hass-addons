@@ -166,7 +166,7 @@ python3 /usr/local/bin/migrate_otbr_settings.py \
 
 bashio::log.info "Starting otbr-agent..."
 # shellcheck disable=SC2086
-exec s6-notifyoncheck -d -s 300 -w 300 -n 0 stdbuf -oL \
+exec s6-notifyoncheck -d -s 300 -w 300 -n 0 \
     "/usr/sbin/otbr-agent" -I ${thread_if} -B "${backbone_if}" \
         --rest-listen-address "${otbr_rest_listen}" \
         -d${otbr_log_level_int} -v -s \
