@@ -91,7 +91,7 @@ case "${otbr_log_level}" in
 esac
 
 # shellcheck disable=SC2015
-mkdir -p /data/thread && ln -sft /var/lib /data/thread || bashio::exit.nok "Could not create directory /var/lib/thread to store Thread data."
+mkdir -p /data/thread && ln -sf /data/thread /var/lib/thread || bashio::exit.nok "Could not create directory /var/lib/thread to store Thread data."
 
 # We compile the OTBR with firewall support, so otbr-agent tries to update the
 # ipsets. Therefor, create ipsets always to avoid errors from otbr-agent. Just
