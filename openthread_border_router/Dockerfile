@@ -174,7 +174,7 @@ FROM ${BUILD_FROM}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG SERIALX_VERSION
-ARG UNIVERSAL_SILABS_FLASHER_VERSION
+ARG AIOSPINEL_VERSION
 
 # Install runtime dependencies
 RUN \
@@ -193,7 +193,7 @@ RUN \
        protobuf \
        jsoncpp \
     && pip install --break-system-packages --no-cache-dir \
-       universal-silabs-flasher==${UNIVERSAL_SILABS_FLASHER_VERSION} \
+       aiospinel==${AIOSPINEL_VERSION} \
        serialx==${SERIALX_VERSION} \
     && apk del py3-pip
 
@@ -206,6 +206,9 @@ RUN \
 COPY --from=otbr-beta-builder /opt/otbr-beta /opt/otbr-beta
 COPY --from=otbr-stable-builder /opt/otbr-stable /opt/otbr-stable
 COPY rootfs /
+
+# Smoke test: ensure the migration tool imports and runs after dependency changes
+RUN python3 /usr/local/bin/migrate_otbr_settings.py --help > /dev/null
 
 ENV \
     S6_STAGE2_HOOK=/etc/s6-overlay/scripts/enable-check.sh
