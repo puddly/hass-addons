@@ -192,6 +192,8 @@ RUN \
        ncurses-libs \
        protobuf \
        jsoncpp \
+       # otbr-agent links abseil directly; this lib is not pulled by `protobuf`
+       abseil-cpp-vlog-config-internal \
     && pip install --break-system-packages --no-cache-dir \
        aiospinel==${AIOSPINEL_VERSION} \
        serialx==${SERIALX_VERSION} \
