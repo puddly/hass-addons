@@ -209,8 +209,15 @@ COPY --from=otbr-beta-builder /opt/otbr-beta /opt/otbr-beta
 COPY --from=otbr-stable-builder /opt/otbr-stable /opt/otbr-stable
 COPY rootfs /
 
-# Smoke test: ensure the migration tool imports and runs after dependency changes
-RUN python3 /usr/local/bin/migrate_otbr_settings.py --help > /dev/null
+# Smoke test: ensure every binary loads its shared libraries and runs, for both
+# OTBR builds and the settings-migration tool
+RUN \
+    set -x \
+    && python3 /usr/local/bin/migrate_otbr_settings.py --help > /dev/null \
+    && /opt/otbr-beta/sbin/otbr-agent --version \
+    && /opt/otbr-stable/sbin/otbr-agent --version \
+    && /opt/otbr-beta/sbin/otbr-web -v \
+    && /opt/otbr-stable/sbin/otbr-web -v
 
 ENV \
     S6_STAGE2_HOOK=/etc/s6-overlay/scripts/enable-check.sh
